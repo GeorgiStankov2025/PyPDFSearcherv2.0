@@ -1,0 +1,19 @@
+[project]
+name = "pypdfsearcher"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.129.0",
+    "fastapi-users>=15.0.4",
+    "langchain>=1.2.10",
+    "langchain-core>=1.2.13",
+    "langgraph>=1.0.8",
+    "openai>=2.21.0",
+    "pydantic>=2.12.5",
+    "pypdf>=6.7.1",
+    "python-dotenv>=1.2.1",
+    "python-jose>=3.5.0",
+    "uvicorn>=0.41.0",
+]
