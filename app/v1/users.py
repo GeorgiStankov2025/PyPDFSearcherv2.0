@@ -45,6 +45,7 @@ def verify_token(request: Request):
     token = authorization.split(" ")[1]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        request.state.user = payload
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -108,8 +109,8 @@ async def login(request:UserLogin, session:AsyncSession=Depends(db.get_async_ses
         raise HTTPException(status_code=500,detail=str(e))
 
 
-@router.get("/getcurrentuser", dependencies=[Depends(verify_token)])
+@router.get("/getcurrentuser", dependencies=[Depends(verify_token)],tags=["users"])
 async def get_current_user(request: Request):
     # Retrieve the data we tucked away in the 'state'
     user = request.state.user
-    return user
+    return {"username": user.get("sub")}
