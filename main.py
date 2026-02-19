@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
-from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from app.v1 import users, prompts
 from app.db import create_db_and_tables
