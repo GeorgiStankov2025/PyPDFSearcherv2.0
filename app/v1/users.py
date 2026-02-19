@@ -21,8 +21,6 @@ from fastapi import Request
 router = APIRouter()
 hasher = Hasher()
 
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "a-string-secret-at-least-256-bits-long"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 5
