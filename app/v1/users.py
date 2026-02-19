@@ -67,9 +67,9 @@ async def register(request:UserCreate, session:AsyncSession=Depends(db.get_async
             raise HTTPException(status_code=400,detail="Username already exists")
         if request.username is None or request.username=="" or request.username.isspace():
             raise HTTPException(status_code=400,detail="Username is required")
-        if request.password  is None or request.username=="" or  request.password.isspace():
+        if request.password  is None or request.password=="" or  request.password.isspace():
             raise HTTPException(status_code=400,detail="Password is required")
-        if request.email is None or request.username=="" or request.email.isspace():
+        if request.email is None or request.email=="" or request.email.isspace():
             raise HTTPException(status_code=400,detail="Email is required")
 
         user = User(
@@ -111,6 +111,5 @@ async def login(request:UserLogin, session:AsyncSession=Depends(db.get_async_ses
 
 @router.get("/getcurrentuser", dependencies=[Depends(verify_token)],tags=["users"])
 async def get_current_user(request: Request):
-    # Retrieve the data we tucked away in the 'state'
     user = request.state.user
     return {"username": user.get("sub")}

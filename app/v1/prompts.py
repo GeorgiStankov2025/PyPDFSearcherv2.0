@@ -14,11 +14,12 @@ from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
 
 from app.db import Prompt
+from app.schemas import PromptCreate
 from app.v1.users import verify_token
 
 router=APIRouter(dependencies=[Depends(verify_token)])
 @router.post("/prompts",tags=["prompts"])
-async def create_prompt(message:str,session:AsyncSession=Depends(get_async_session)):
+async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_async_session)):
 
     class AgentState(TypedDict):
         messages: Annotated[list, operator.add]
@@ -84,7 +85,7 @@ async def create_prompt(message:str,session:AsyncSession=Depends(get_async_sessi
     from langgraph.checkpoint.memory import MemorySaver
     from langgraph.prebuilt import create_react_agent
 
-    query = {"messages": [("user", message)]}
+    query = {"messages": [("user", request.message)]}
 
     agent = create_agent(tools=[load_pdfs, text_splitting,convert_to_vectorstore_data_and_similarity_search],model="gpt-4.1-nano",
         system_prompt="You are a strict Technical File Assistant. You have NO internal knowledge of hardware, "
@@ -99,7 +100,7 @@ async def create_prompt(message:str,session:AsyncSession=Depends(get_async_sessi
 
     prompt=Prompt(
 
-        message=message,
+        message=request.message,
         response=response["messages"][-1].content,
 
     )

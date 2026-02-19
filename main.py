@@ -18,9 +18,8 @@ def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="FastAPI application",
+        title="PyPDFSearcher",
         version="1.0.0",
-        description="JWT Authentication and Authorization",
         routes=app.routes,
     )
     openapi_schema["components"]["securitySchemes"] = {

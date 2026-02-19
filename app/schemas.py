@@ -11,4 +11,5 @@ class UserLogin(BaseModel):
     username:str
     password:str
 
-
+class PromptCreate(BaseModel):
+    message:str
