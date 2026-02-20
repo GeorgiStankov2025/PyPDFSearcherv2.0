@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Optional, List
+from fastapi_mail import FastMail,MessageSchema,ConnectionConfig
+from pydantic import BaseModel, EmailStr
 
-from pydantic import BaseModel
 
 class UserCreate(BaseModel):
     username:str
@@ -13,3 +14,6 @@ class UserLogin(BaseModel):
 
 class PromptCreate(BaseModel):
     message:str
+
+class EmailSchema(BaseModel):
+    email:List[EmailStr]

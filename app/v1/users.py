@@ -1,6 +1,8 @@
 import random
 import time
 from datetime import datetime, timezone, timedelta
+from email.message import EmailMessage
+
 from fastapi import Header
 from typing import Annotated
 
@@ -10,15 +12,16 @@ from fastapi import APIRouter
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from email_validator import validate_email, EmailNotValidError
 from jose import jwt
 from sqlalchemy.orm import selectinload
 
 from app import db
 from app.db import User
+from app.emails import send_mail
 from app.hasher import Hasher
-from app.schemas import UserCreate, UserLogin
-from pydantic import ValidationError
+from app.schemas import UserCreate, UserLogin, EmailSchema
+from pydantic import ValidationError, EmailStr
 from fastapi import Request
 router = APIRouter()
 hasher = Hasher()
@@ -84,6 +87,7 @@ async def register(request:UserCreate, session:AsyncSession=Depends(db.get_async
 
         )
 
+        await send_mail(request.email,user.verification_code)
         session.add(user)
         await session.commit()
         await session.refresh(user)

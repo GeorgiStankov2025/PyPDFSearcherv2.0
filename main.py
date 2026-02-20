@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
+
+from app import emails
 from app.v1 import users, prompts
 from app.db import create_db_and_tables
 
@@ -12,6 +14,7 @@ async def lifespan(app: FastAPI):
 app=FastAPI(lifespan=lifespan)
 app.include_router(prompts.router)
 app.include_router(users.router)
+app.include_router(emails.router)
 
 def custom_openapi():
     if app.openapi_schema:
