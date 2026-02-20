@@ -1,4 +1,5 @@
-
+import random
+import time
 from datetime import datetime, timezone, timedelta
 from fastapi import Header
 from typing import Annotated
@@ -11,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from jose import jwt
+from sqlalchemy.orm import selectinload
 
 from app import db
 from app.db import User
@@ -77,7 +79,8 @@ async def register(request:UserCreate, session:AsyncSession=Depends(db.get_async
             password_hash=hasher.hash_password(request.password),
             created_at=datetime.now(),
             modified_at=datetime.now(),
-            is_verified = False
+            is_verified = False,
+            verification_code=random.Random(int(time.time())).randint(111111, 999999),
 
         )
 
@@ -111,3 +114,10 @@ async def login(request:UserLogin, session:AsyncSession=Depends(db.get_async_ses
 async def get_current_user(request: Request):
     user = request.state.user
     return {"username": user.get("sub")}
+
+@router.get("/users", dependencies=[Depends(verify_token)],tags=["users"])
+async def get_users(session: AsyncSession = Depends(db.get_async_session)):
+    result = await session.execute(select(User).order_by(User.created_at.desc()).options(selectinload(User.prompts)))
+    users = [row[0] for row in result.all()]
+    return users
+

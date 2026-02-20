@@ -8,18 +8,20 @@ from langgraph.types import Command
 from langchain_openai import OpenAIEmbeddings
 import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db import get_async_session
+from app.db import get_async_session, User
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
-
+from fastapi import Request
 from app.db import Prompt
 from app.schemas import PromptCreate
 from app.v1.users import verify_token
-
+from app.v1.users import get_current_user
 router=APIRouter(dependencies=[Depends(verify_token)])
+
 @router.post("/prompts",tags=["prompts"])
-async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_async_session)):
+async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_async_session),current_user: dict = Depends(get_current_user)):
 
     class AgentState(TypedDict):
         messages: Annotated[list, operator.add]
@@ -98,10 +100,14 @@ async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_as
 
     response=await agent.ainvoke(input=query)
 
+    username_search = await session.execute(select(User).where(User.username == current_user["username"]))
+    user = username_search.scalars().first()
+
     prompt=Prompt(
 
         message=request.message,
         response=response["messages"][-1].content,
+        user_id=user.id,
 
     )
     session.add(prompt)
