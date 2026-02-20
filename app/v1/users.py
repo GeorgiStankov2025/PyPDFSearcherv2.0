@@ -87,7 +87,12 @@ async def register(request:UserCreate, session:AsyncSession=Depends(db.get_async
 
         )
 
-        await send_mail(request.email,user.verification_code)
+        email_message=EmailSchema(
+
+            email=[request.email]
+        )
+
+        await send_mail(email_message,user.verification_code)
         session.add(user)
         await session.commit()
         await session.refresh(user)
@@ -125,3 +130,21 @@ async def get_users(session: AsyncSession = Depends(db.get_async_session)):
     users = [row[0] for row in result.all()]
     return users
 
+@router.patch("/verify_user",dependencies=[Depends(verify_token)],tags=["users"])
+async def verify_user(verification_code:int,session:AsyncSession=Depends(db.get_async_session),current_user: dict = Depends(get_current_user)):
+    username_search = await session.execute(select(User).where(User.username == current_user["username"]))
+    user = username_search.scalars().first()
+    try:
+        if user.verification_code == verification_code:
+            user.is_verified = True
+            user.verification_code = 0
+            user.modified_at = datetime.now()
+            await session.commit()
+            await session.refresh(user)
+            return user
+        else:
+            raise HTTPException(status_code=400,detail="Incorrect verification code")
+    except HTTPException as e:
+        raise HTTPException(status_code=400,detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
