@@ -10,6 +10,8 @@ import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.db import get_async_session, User
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
@@ -114,3 +116,4 @@ async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_as
     await session.commit()
     await session.refresh(prompt)
     return prompt
+
