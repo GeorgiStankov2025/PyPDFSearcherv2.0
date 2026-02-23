@@ -2,15 +2,24 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
 from fastapi import Depends
-from sqlalchemy import Text, String, Column, DateTime, ForeignKey, INT, Boolean
+from sqlalchemy import Text, String, Column, DateTime, ForeignKey, INT, Boolean,Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, relationship
+from app.schemas import UserRole
+from sqlalchemy.dialects.postgresql import ENUM as pg_ENUM
 
 DATABASE_URL = "postgresql+asyncpg://postgres:Bit_2024@localhost/pypdfsearcherdb"
 
+user_role_enum = pg_ENUM(
+    UserRole,
+    name="user_role",      # The name inside Postgres
+    create_type=True       # Tells SQLAlchemy to issue CREATE TYPE
+)
+
 class Base(DeclarativeBase):
     pass
+
 
 class User(Base):
     __tablename__ = "users"
@@ -21,6 +30,7 @@ class User(Base):
     created_at = Column(DateTime,nullable=False)
     modified_at = Column(DateTime,nullable=False)
     verification_code = Column(INT,nullable=False)
+    user_role = Column(user_role_enum, nullable=False, server_default="USER")
     is_verified=Column(Boolean,nullable=False,default=False)
     prompts=relationship("Prompt",back_populates="user")
 

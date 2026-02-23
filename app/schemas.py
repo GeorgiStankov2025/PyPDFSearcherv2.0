@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Optional, List
 from fastapi_mail import FastMail,MessageSchema,ConnectionConfig
 from pydantic import BaseModel, EmailStr
@@ -28,8 +29,13 @@ class UserForgottenPassword(BaseModel):
     confirm_new_password:str
     verification_code:int
 
+class UserRole(Enum):
+    ADMIN = "ADMIN"
+    USER = "USER"
+
 class PromptCreate(BaseModel):
     message:str
 
 class EmailSchema(BaseModel):
     email:List[EmailStr]
+
