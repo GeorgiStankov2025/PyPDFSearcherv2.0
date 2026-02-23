@@ -1,7 +1,9 @@
+from fastapi import HTTPException
+
 from fastapi import APIRouter
 from fastapi_mail import FastMail,MessageSchema,ConnectionConfig
 from starlette.responses import JSONResponse
-
+import requests
 from app.schemas import EmailSchema
 
 router = APIRouter()
@@ -42,3 +44,37 @@ async def send_mail(email: EmailSchema,verification_code:int):
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+@router.post("/forgotten_password_emails", tags=["emails"])
+async def send_forgotten_mail(email: EmailSchema,verification_code:int):
+    template = f"""
+        <html>
+        <body>
+
+
+<p>Hi !!!
+        <br>Hello this is a non-reply email for changing your password! You may find your verification code from here {verification_code}.</p>
+
+
+        </body>
+        </html>
+        """
+
+    message = MessageSchema(
+        subject="PyPDFSearcher team",
+        recipients=email.model_dump().get("email"),  # List of recipients, as many as you can pass
+        body=template,
+        subtype="html"
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)
+
+@router.get("/verifyemail", tags=["emails"])
+async def verify_email(email: str):
+    response=requests.get(f"https://api.hunter.io/v2/email-verifier?email={email}&api_key=dd2de88db7a29b0eb4e8fc2a6ec002d76093f0e1").json()
+    if "data" not in response:
+        raise(HTTPException(status_code=400,detail="Incorrect or non-existent email address"))
+    else:
+        return response['data']['status']
+

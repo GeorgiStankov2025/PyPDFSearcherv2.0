@@ -12,6 +12,21 @@ class UserLogin(BaseModel):
     username:str
     password:str
 
+class UserVerify(BaseModel):
+    username:str
+    verification_code:int
+
+class UserChangePassword(BaseModel):
+    username:str
+    old_password:str
+    new_password:str
+    confirm_new_password:str
+
+class UserForgottenPassword(BaseModel):
+    email:str
+    new_password:str
+    confirm_new_password:str
+
 class PromptCreate(BaseModel):
     message:str
 
