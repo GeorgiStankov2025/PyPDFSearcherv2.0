@@ -26,6 +26,7 @@ class UserForgottenPassword(BaseModel):
     email:str
     new_password:str
     confirm_new_password:str
+    verification_code:int
 
 class PromptCreate(BaseModel):
     message:str

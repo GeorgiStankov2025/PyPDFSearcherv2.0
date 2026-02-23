@@ -206,9 +206,48 @@ async def send_forgotten_password_email(email:str,session:AsyncSession=Depends(d
 
         )
         await send_forgotten_mail(email_message,user.verification_code)
+        await session.commit()
+        await session.refresh(user)
         return {"message":"Email sent successfully!"}
 
     except HTTPException as e:
         raise HTTPException(status_code=400,detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
+
+@router.patch("/forgotten_password_change",tags=["users"])
+async def forgotten_password_change(request:UserForgottenPassword,session:AsyncSession=Depends(db.get_async_session)):
+   try:
+        if request.email =="" or request.email.isspace():
+            raise HTTPException(status_code=400,detail="Email field is required")
+        if request.verification_code =="" or request.verification_code==0:
+            raise HTTPException(status_code=400,detail="Verification code field is required")
+        if request.new_password =="" or request.new_password.isspace():
+            raise HTTPException(status_code=400,detail="New password field is required")
+        if request.confirm_new_password =="" or request.confirm_new_password.isspace():
+            raise HTTPException(status_code=400,detail="Confirm password field is required")
+        if request.new_password!=request.confirm_new_password:
+            raise HTTPException(status_code=400,detail="Passwords do not match")
+        if await verify_email(request.email)!="valid":
+            raise HTTPException(status_code=400,detail="Incorrect or non-existent email address")
+
+        email_search = await session.execute(select(User).where(User.email == request.email))
+        user = email_search.scalars().first()
+
+        if user is None:
+            raise HTTPException(status_code=404,detail="No user found with this email address")
+        if user.verification_code != request.verification_code:
+            raise HTTPException(status_code=400,detail="Incorrect verification code")
+
+        user.verification_code = 0
+        user.password_hash = hasher.hash_password(request.confirm_new_password)
+        user.modified_at = datetime.now()
+        await session.commit()
+        await session.refresh(user)
+        return user
+   except HTTPException as e:
+        raise HTTPException(status_code=e.status_code,detail=str(e))
+   except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
+
+
