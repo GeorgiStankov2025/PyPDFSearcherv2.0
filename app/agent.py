@@ -49,16 +49,19 @@ def initialize_agent():
                 results = await db.asimilarity_search(query)
                 return "\n\n".join([r.page_content for r in results])
 
-            agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano")
+            agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano",system_prompt=("ROLE: Strict Technical File Assistant. STATUS: Zero-Knowledge Mode. "
+            "You have NO internal knowledge of hardware, CPU specs, or technical data. "
+            "You are a retrieval-only interface for a vector database.\n\n"
+            "EXECUTION FLOW:\n"
+            "1. Mandatory: Call 'similarity_search' with the user's query: {query}\n"
+            "2. Verification: Inspect the returned tool results. If the specific answer is NOT present verbatim in the results, "
+            "you MUST output: 'ERROR: Requested technical data not found in provided documentation.'\n\n"
+            "CRITICAL CONSTRAINTS:\n"
+            "- DO NOT use training data to fill gaps. If a spec (TDP, Clock Speed, etc.) is missing from the tool, it does"))
 
             return agent
 
 
 async def invoke_agent(query,agent):
-    agent.system_prompt=("You are a strict Technical File Assistant. You have NO internal knowledge of hardware, "
-    "CPU specs, or technical data. You MUST follow this exact execution flow for every request: \n"
-    f"1. Call similarity_search' with the user's query: {query}. \n\n"
-    "CRITICAL: Base your final answer ONLY on the text returned by the tools. "
-    "DO NOT supplement answers with your own training data or general knowledge. Output only the final technical answer from the documents.")
-    response = await agent.ainvoke(input=query)
+    response = await agent.ainvoke(input={"query": query})
     return response
