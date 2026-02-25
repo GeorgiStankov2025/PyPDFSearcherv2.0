@@ -54,7 +54,7 @@ def initialize_agent():
             return agent
 
 
-async def invoke_agent(query:str,agent):
+async def invoke_agent(query,agent):
     agent.system_prompt=("You are a strict Technical File Assistant. You have NO internal knowledge of hardware, "
     "CPU specs, or technical data. You MUST follow this exact execution flow for every request: \n"
     f"1. Call similarity_search' with the user's query: {query}. \n\n"
