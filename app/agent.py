@@ -5,19 +5,35 @@ import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
+import requests
 
 open_api_key=os.getenv("OPENAI_API_KEY")
 
+"""
 embeddings=OpenAIEmbeddings(api_key=open_api_key,model="text-embedding-3-small")
 
-pdf_loader = PyPDFDirectoryLoader(path=r"E:\специални предмети\ОКС - 10д-20220918T114024Z-001\ОКС - 10д")
+pdf_loader = PyPDFDirectoryLoader(path=r"D:\langChain\booksource")
 raw_documents = pdf_loader.load()
 
 text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 split_documents = text_splitter.transform_documents(raw_documents)
 
 db = QdrantVectorStore.from_documents(documents=list(split_documents), embedding=embeddings, url="http://localhost:6333",
-                                                             collection_name="my-collection")
+                                              collection_name="scotty-collection")"""
+
+headers = {
+    'Content-Type': 'application/json',
+}
+
+json_data = {
+    'with_payload': True,
+    'with_vector': True,
+}
+
+db =requests.get(
+    'http://localhost:6333/collections/my_collection/snapshots/scotty-collection-211959557519884-2026-02-26-14-58-24.snapshot',
+)
+
 from langchain_openai import OpenAI
 
 llm = OpenAI(model="gpt-4.1-nano", api_key=open_api_key, temperature=0)
