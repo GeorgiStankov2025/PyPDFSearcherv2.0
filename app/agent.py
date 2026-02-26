@@ -8,7 +8,7 @@ from langchain_qdrant import QdrantVectorStore
 
 open_api_key=os.getenv("OPENAI_API_KEY")
 
-embeddings=OpenAIEmbeddings(api_key=open_api_key)
+embeddings=OpenAIEmbeddings(api_key=open_api_key,model="text-embedding-3-small")
 
 pdf_loader = PyPDFDirectoryLoader(path=r"E:\специални предмети\ОКС - 10д-20220918T114024Z-001\ОКС - 10д")
 raw_documents = pdf_loader.load()
