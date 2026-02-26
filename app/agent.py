@@ -42,9 +42,9 @@ llm = OpenAI(model="gpt-4.1-nano", api_key=open_api_key, temperature=0)
 
 
 @tool
-def similarity_search(query: str) -> str:
+async def similarity_search(query: str) -> str:
      """Performs a similarity search based on user query."""
-     results = db.similarity_search(query)
+     results = await db.asimilarity_search(query)
      return "\n\n".join([r.page_content for r in results])
 
 agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano",system_prompt=("ROLE: Technical Document Specialist. STATUS: Grounded Retrieval Mode (2026). "
