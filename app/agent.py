@@ -24,44 +24,41 @@ from app.schemas import PromptCreate
 from app.v1.users import verify_token
 from app.v1.users import get_current_user
 
+open_api_key=os.getenv("OPENAI_API_KEY")
 
-def initialize_agent():
+embeddings=OpenAIEmbeddings(api_key=open_api_key)
 
-            open_api_key=os.getenv("OPENAI_API_KEY")
+pdf_loader = PyPDFDirectoryLoader(path=r"E:\специални предмети\ОКС - 10д-20220918T114024Z-001\ОКС - 10д")
+raw_documents = pdf_loader.load()
 
-            embeddings=OpenAIEmbeddings(api_key=open_api_key)
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+split_documents = text_splitter.transform_documents(raw_documents)
 
-            pdf_loader = PyPDFDirectoryLoader(path=r"E:\специални предмети\ОКС - 10д-20220918T114024Z-001\ОКС - 10д")
-            raw_documents = pdf_loader.load()
-
-            text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-            split_documents = text_splitter.transform_documents(raw_documents)
-
-            db = QdrantVectorStore.from_documents(documents=split_documents, embedding=embeddings, url="http://localhost:6333",
+db = QdrantVectorStore.from_documents(documents=list(split_documents), embedding=embeddings, url="http://localhost:6333",
                                                              collection_name="my-collection")
-            from langchain_openai import OpenAI
+from langchain_openai import OpenAI
 
-            llm = OpenAI(model="gpt-4.1-nano", api_key=open_api_key, temperature=0)
-
-            @tool
-            async def similarity_search(query: str) -> str:
-                """Performs a similarity search based on user query."""
-                results = await db.asimilarity_search(query)
-                return "\n\n".join([r.page_content for r in results])
-
-            agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano",system_prompt=("ROLE: Strict Technical File Assistant. STATUS: Zero-Knowledge Mode. "
-            "You have NO internal knowledge of hardware, CPU specs, or technical data. "
-            "You are a retrieval-only interface for a vector database.\n\n"
-            "EXECUTION FLOW:\n"
-            "1. Mandatory: Call 'similarity_search' with the user's query: {query}\n"
-            "2. Verification: Inspect the returned tool results. If the specific answer is NOT present verbatim in the results, "
-            "you MUST output: 'ERROR: Requested technical data not found in provided documentation.'\n\n"
-            "CRITICAL CONSTRAINTS:\n"
-            "- DO NOT use training data to fill gaps. If a spec (TDP, Clock Speed, etc.) is missing from the tool, it does"))
-
-            return agent
+llm = OpenAI(model="gpt-4.1-nano", api_key=open_api_key, temperature=0)
 
 
-async def invoke_agent(query,agent):
-    response = await agent.ainvoke(input={"query": query})
-    return response
+@tool
+def similarity_search(query: str) -> str:
+     """Performs a similarity search based on user query."""
+     results = db.similarity_search(query)
+     return "\n\n".join([r.page_content for r in results])
+
+agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano",system_prompt=("ROLE: Technical Document Specialist. STATUS: Grounded Retrieval Mode (2026). "
+                                                                                    "INSTRUCTIONS: "
+                                                                                    "1. ALWAYS start by calling 'similarity_search' with the user's intent."
+                                                                                    "2. USE ONLY the retrieved context to answer. You are forbidden from using external CPU/Hardware knowledge."
+                                                                                    "3. FLEXIBILITY: You may interpret technical synonyms (e.g., if the text says 'draws 65W' and the user asks for 'TDP', you may connect them). "
+                                                                                    "4. REASONING: If the data is present but spread across multiple chunks, synthesize them into a clear answer."
+                                                                                    "5. HARD STOP: If the retrieved text does not contain the specific numerical values or facts requested, state: 'Requested technical data not found in provided documentation'."
+                                                                                    "CRITICAL: Do not mention your internal training data. If it isn't in the tool results, it doesn't exist."))
+
+async def invoke_agent(query):
+
+    inputs = {"messages": [("user", query)]}
+    response=await agent.ainvoke(inputs)
+    return response["messages"][-1].content
+

@@ -1,41 +1,23 @@
-# %%
-import operator
 import uuid
-from fastapi import HTTPException
-from typing import Annotated, TypedDict, List
-from uuid import UUID
-
-from fastapi import APIRouter,Depends
-from langchain_experimental.graph_transformers.llm import system_prompt
-from langgraph.types import Command
-from langchain_openai import OpenAIEmbeddings
-import os
-from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader
+from app.agent import invoke_agent
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
-from app.agent import invoke_agent, initialize_agent
 from app.db import get_async_session, User
-from langchain_core.tools import tool, InjectedToolCallId
-from langchain_qdrant import QdrantVectorStore
-from fastapi import Request
 from app.db import Prompt
 from app.schemas import PromptCreate
 from app.v1.users import verify_token
 from app.v1.users import get_current_user
 from fastapi import Depends, HTTPException
 from fastapi import APIRouter
-from app.agent import initialize_agent
+
 router=APIRouter(dependencies=[Depends(verify_token)])
-agent=initialize_agent()
 
 @router.post("/prompts",tags=["prompts"])
 async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_async_session),current_user: dict = Depends(get_current_user)):
 
-    query={"messages": [("user", request.message)]}
-
-    response = await invoke_agent(agent=agent, query=query)
+    query=request.message
+    response = await invoke_agent(query)
 
     username_search = await session.execute(select(User).where(User.username == current_user["username"]))
     user = username_search.scalars().first()
@@ -43,7 +25,7 @@ async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_as
     prompt=Prompt(
 
         message=request.message,
-        response=response["messages"][-1].content,
+        response=response,
         user_id=user.id,
 
     )

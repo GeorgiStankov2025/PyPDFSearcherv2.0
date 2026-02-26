@@ -7,7 +7,6 @@ from fastapi.openapi.utils import get_openapi
 from app import emails
 from app.v1 import users, prompts, admin
 from app.db import create_db_and_tables
-from app.agent import create_agent, initialize_agent
 
 
 @asynccontextmanager
@@ -40,8 +39,6 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
-
-agent=initialize_agent()
 
 if __name__=="__main__":
     uvicorn.run("main:app",host="127.0.0.1",port=5000,reload=True)
