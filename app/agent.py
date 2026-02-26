@@ -1,28 +1,10 @@
-import operator
-import uuid
-from fastapi import HTTPException
-from typing import Annotated, TypedDict, List
-from uuid import UUID
 from langchain.agents import create_agent
-from langchain_core.messages import ToolMessage
-from langchain_experimental.graph_transformers.llm import system_prompt
 from langchain_text_splitters import CharacterTextSplitter
-from langgraph.types import Command
 from langchain_openai import OpenAIEmbeddings
 import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
-from app.db import get_async_session, User
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
-from fastapi import Request
-from app.db import Prompt
-from app.schemas import PromptCreate
-from app.v1.users import verify_token
-from app.v1.users import get_current_user
 
 open_api_key=os.getenv("OPENAI_API_KEY")
 
@@ -47,7 +29,7 @@ async def similarity_search(query: str) -> str:
      results = await db.asimilarity_search(query)
      return "\n\n".join([r.page_content for r in results])
 
-agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano",system_prompt=("ROLE: Technical Document Specialist. STATUS: Grounded Retrieval Mode (2026). "
+chat_agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano",system_prompt=("ROLE: Technical Document Specialist. STATUS: Grounded Retrieval Mode (2026). "
                                                                                     "INSTRUCTIONS: "
                                                                                     "1. ALWAYS start by calling 'similarity_search' with the user's intent."
                                                                                     "2. USE ONLY the retrieved context to answer. You are forbidden from using external CPU/Hardware knowledge."
@@ -59,6 +41,6 @@ agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano",system_prom
 async def invoke_agent(query):
 
     inputs = {"messages": [("user", query)]}
-    response=await agent.ainvoke(inputs)
+    response=await chat_agent.ainvoke(inputs)
     return response["messages"][-1].content
 
