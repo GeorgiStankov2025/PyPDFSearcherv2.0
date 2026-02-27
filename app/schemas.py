@@ -39,3 +39,5 @@ class PromptCreate(BaseModel):
 class EmailSchema(BaseModel):
     email:List[EmailStr]
 
+class CreateReport(BaseModel):
+    message:str

@@ -5,7 +5,7 @@ import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
-from langchain_google_genai import GoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 import requests
 
 open_api_key=os.getenv("OPENAI_API_KEY")
@@ -13,7 +13,7 @@ open_api_key=os.getenv("OPENAI_API_KEY")
 
 embeddings=OpenAIEmbeddings(api_key=open_api_key,model="text-embedding-3-small")
 """
-pdf_loader = PyPDFDirectoryLoader(path=r"D:\langChain\booksource")
+pdf_loader = PyPDFDirectoryLoader(path=r"path to folder")
 raw_documents = pdf_loader.load()
 
 text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
@@ -27,7 +27,7 @@ db=QdrantVectorStore.from_existing_collection(collection_name="scotty-collection
 from langchain_openai import OpenAI
 
 gpt_llm = OpenAI(model="gpt-4.1-nano", api_key=open_api_key, temperature=0)
-gemini_llm=GoogleGenerativeAI(model="gemini-2.0-flash",api_key=os.getenv("GOOGLE_API_KEY"))
+gemini_llm=ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
 
 @tool
