@@ -1,3 +1,5 @@
+import re
+
 from langchain.agents import create_agent
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -27,7 +29,17 @@ db=QdrantVectorStore.from_existing_collection(collection_name="scotty-collection
 from langchain_openai import OpenAI
 
 gpt_llm = OpenAI(model="gpt-4.1-nano", api_key=open_api_key, temperature=0)
-gemini_llm=ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+gemini_llm=ChatGoogleGenerativeAI(model="gemini-2.0-flash",max_retries=6,
+    stop=["\n\n"])
+
+spare_symbols=[
+
+    '\n',
+    '@',
+    '#',
+    '*'
+
+]
 
 
 @tool
@@ -52,7 +64,7 @@ async def invoke_chat_agent(query):
     return response["messages"][-1].content
 
 
-reports_agent=create_agent(tools=[similarity_search],model="gemini-2.0-flash",
+reports_agent=create_agent(tools=[similarity_search],model="gemini-2.5-flash",
 system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to generate reports based on information retrieved from a vector database. "
               "CORE OPERATIONAL RULES: "
               "1. MANDATORY TOOL USE: You must call the `similarity_search` tool for every request. You are not permitted to answer without first performing a search. "
@@ -67,5 +79,5 @@ system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to gen
 
 async def invoke_reports_agent(query):
     inputs = {"messages": [("user", query)]}
-    response=await reports_agent.ainvoke(inputs)
-    return response["messages"][-1].content
+    result=await reports_agent.ainvoke(inputs)
+    return result["messages"][-1].content
