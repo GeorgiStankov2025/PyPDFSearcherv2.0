@@ -5,6 +5,7 @@ import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
+from langchain_google_genai import GoogleGenerativeAI
 import requests
 
 open_api_key=os.getenv("OPENAI_API_KEY")
@@ -25,7 +26,8 @@ db=QdrantVectorStore.from_existing_collection(collection_name="scotty-collection
 
 from langchain_openai import OpenAI
 
-llm = OpenAI(model="gpt-4.1-nano", api_key=open_api_key, temperature=0)
+gpt_llm = OpenAI(model="gpt-4.1-nano", api_key=open_api_key, temperature=0)
+gemini_llm=GoogleGenerativeAI(model="gemini-2.0-flash",api_key=os.getenv("GOOGLE_API_KEY"))
 
 
 @tool
@@ -43,9 +45,27 @@ chat_agent = create_agent(tools=[similarity_search], model="gpt-4.1-nano",system
                                                                                     "5. HARD STOP: If the retrieved text does not contain the specific numerical values or facts requested, state: 'Requested technical data not found in provided documentation'."
                                                                                     "CRITICAL: Do not mention your internal training data. If it isn't in the tool results, it doesn't exist."))
 
-async def invoke_agent(query):
+async def invoke_chat_agent(query):
 
     inputs = {"messages": [("user", query)]}
     response=await chat_agent.ainvoke(inputs)
     return response["messages"][-1].content
 
+
+reports_agent=create_agent(tools=[similarity_search],model="gemini-2.0-flash",
+system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to generate reports based on information retrieved from a vector database. "
+              "CORE OPERATIONAL RULES: "
+              "1. MANDATORY TOOL USE: You must call the `similarity_search` tool for every request. You are not permitted to answer without first performing a search. "
+              "2. SOURCE LIMITATION: Your output must be based EXCLUSIVELY on the data returned by the `similarity_search` tool. "
+              "3. KNOWLEDGE CUTOFF: You must ignore all of your internal training data, general knowledge, and external facts. If a fact is not explicitly stated in the retrieved documents, it does not exist for the purpose of this report. "
+              "4. INSUFFICIENT DATA PROTOCOL: If the retrieved documents do not contain the specific information required to answer the prompt, or if the search returns no results, you must state exactly: 'I cannot fulfill this request because the required information is not present in the database.' Do not attempt to fill in gaps with your own logic or assumptions. "
+              "5. NO HALLUCINATION: Do not infer, speculate, or provide 'likely' scenarios. Stick to the literal text provided in the search results."
+              "REPORT FORMAT:"
+              "- Title your report based on the user's input."
+              "- Use bullet points for clarity."
+              "- Only include information found in the search results.")
+
+async def invoke_reports_agent(query):
+    inputs = {"messages": [("user", query)]}
+    response=await reports_agent.ainvoke(inputs)
+    return response["messages"][-1].content

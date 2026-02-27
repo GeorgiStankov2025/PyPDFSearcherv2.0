@@ -1,5 +1,5 @@
 import uuid
-from app.agent import invoke_agent
+from app.agent import invoke_chat_agent
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -17,7 +17,7 @@ router=APIRouter(dependencies=[Depends(verify_token)])
 async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_async_session),current_user: dict = Depends(get_current_user)):
 
     query=request.message
-    response = await invoke_agent(query)
+    response = await invoke_chat_agent(query)
 
     username_search = await session.execute(select(User).where(User.username == current_user["username"]))
     user = username_search.scalars().first()
