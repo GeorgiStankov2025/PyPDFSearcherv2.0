@@ -9,9 +9,9 @@ import requests
 
 open_api_key=os.getenv("OPENAI_API_KEY")
 
-"""
-embeddings=OpenAIEmbeddings(api_key=open_api_key,model="text-embedding-3-small")
 
+embeddings=OpenAIEmbeddings(api_key=open_api_key,model="text-embedding-3-small")
+"""
 pdf_loader = PyPDFDirectoryLoader(path=r"D:\langChain\booksource")
 raw_documents = pdf_loader.load()
 
@@ -21,18 +21,7 @@ split_documents = text_splitter.transform_documents(raw_documents)
 db = QdrantVectorStore.from_documents(documents=list(split_documents), embedding=embeddings, url="http://localhost:6333",
                                               collection_name="scotty-collection")"""
 
-headers = {
-    'Content-Type': 'application/json',
-}
-
-json_data = {
-    'with_payload': True,
-    'with_vector': True,
-}
-
-db =requests.get(
-    'http://localhost:6333/collections/my_collection/snapshots/scotty-collection-211959557519884-2026-02-26-14-58-24.snapshot',
-)
+db=QdrantVectorStore.from_existing_collection(collection_name="scotty-collection",embedding=embeddings)
 
 from langchain_openai import OpenAI
 
