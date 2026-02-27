@@ -33,6 +33,7 @@ class User(Base):
     user_role = Column(user_role_enum, nullable=False, server_default="USER")
     is_verified=Column(Boolean,nullable=False,default=False)
     prompts=relationship("Prompt",back_populates="user")
+    report_requests=relationship("ReportRequest",back_populates="user")
 
 class Prompt(Base):
     __tablename__ = "prompts"
@@ -42,6 +43,15 @@ class Prompt(Base):
     response=Column(Text, nullable=False)
     created_at = Column(DateTime,nullable=False,default=datetime.now)
     user=relationship("User",back_populates="prompts")
+
+class ReportRequest(Base):
+    __tablename__ = "report_requests"
+    id=Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id=Column(UUID(as_uuid=True), ForeignKey("users.id"),nullable=False)
+    input_message=Column(Text, nullable=False)
+    created_at=Column(DateTime,nullable=False,default=datetime.now)
+    is_successful=Column(Boolean,nullable=False,default=False)
+    user=relationship("User",back_populates="report_requests")
 
 engine = create_async_engine(DATABASE_URL, future=True, echo=True)
 async_session_maker=async_sessionmaker(engine,expire_on_commit=False)
