@@ -8,7 +8,7 @@ from app.agent import invoke_reports_agent
 from app.db import get_async_session, ReportRequest, User
 from app.schemas import CreateReport
 from app.v1.users import verify_token, get_current_user
-
+from docx import Document
 router=APIRouter(dependencies=[Depends(verify_token)])
 
 @router.post("/report_requests",tags=["report_requests"])
@@ -28,6 +28,14 @@ async def create_report(request:CreateReport,session:AsyncSession=Depends(get_as
     )
     if "I cannot fulfill this request because the required information is not present in the database." in result['messages'][-1].content:
         report_request.is_successful=False
+    else:
+        document_content=result['messages'][-1].content[0].get('text', '').replace("*","")
+        document_content=document_content.replace("##","")
+        document=Document()
+        document.add_heading(request.message,level=1)
+        document.add_heading(f"Author:{current_user['username']}",level=2)
+        document.add_paragraph(document_content)
+        document.save(rf"D:\ПУ\II курс\Python\PyPDFSearcher\generated_reports\{request.message}.docx")
     session.add(report_request)
     await session.commit()
     await session.refresh(report_request)
