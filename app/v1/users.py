@@ -3,17 +3,16 @@ import time
 from datetime import datetime, timezone, timedelta
 from email.message import EmailMessage
 
+from jose import jwt
 from fastapi import Header
 from typing import Annotated
 
 from fastapi import HTTPException
 from fastapi import Depends
 from fastapi import APIRouter
-from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from email_validator import validate_email, EmailNotValidError
-from jose import jwt
 from sqlalchemy.orm import selectinload
 
 from app import db
@@ -252,3 +251,11 @@ async def get_prompts_for_user(session:AsyncSession=Depends(db.get_async_session
     if user is None:
         raise HTTPException(status_code=404,detail="No user found with this username")
     return user.prompts
+
+@router.get("/user/report-requests",dependencies=[Depends(verify_token)],tags=["users"])
+async def get_prompts_for_user(session:AsyncSession=Depends(db.get_async_session),current_user:dict=Depends(get_current_user)):
+    username_search = await session.execute(select(User).where(User.username==current_user["username"]).options(selectinload(User.report_requests)))
+    user = username_search.scalars().first()
+    if user is None:
+        raise HTTPException(status_code=404,detail="No user found with this username")
+    return user.report_requests

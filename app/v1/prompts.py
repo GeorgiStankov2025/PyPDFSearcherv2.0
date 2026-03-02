@@ -1,3 +1,4 @@
+from datetime import datetime
 import uuid
 from app.agent import invoke_chat_agent
 from sqlalchemy import select, delete
@@ -27,6 +28,7 @@ async def create_prompt(request:PromptCreate,session:AsyncSession=Depends(get_as
         message=request.message,
         response=response,
         user_id=user.id,
+        created_at=datetime.now(),
 
     )
     session.add(prompt)

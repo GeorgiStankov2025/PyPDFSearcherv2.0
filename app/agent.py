@@ -80,4 +80,4 @@ system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to gen
 async def invoke_reports_agent(query):
     inputs = {"messages": [("user", query)]}
     result=await reports_agent.ainvoke(inputs)
-    return result["messages"][-1].content
+    return result
