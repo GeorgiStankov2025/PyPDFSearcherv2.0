@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional, List
 from fastapi_mail import FastMail,MessageSchema,ConnectionConfig
@@ -41,3 +42,8 @@ class EmailSchema(BaseModel):
 
 class CreateReport(BaseModel):
     message:str
+
+class SessionData(BaseModel):
+    username:str
+    filename:str
+    created_at:datetime
