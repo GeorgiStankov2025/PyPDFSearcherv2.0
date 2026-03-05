@@ -8,7 +8,10 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoade
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.checkpoint.postgres import PostgresSaver
 import requests
+
+from app.v1.users import get_current_user
 
 open_api_key=os.getenv("OPENAI_API_KEY")
 
@@ -63,6 +66,8 @@ async def invoke_chat_agent(query):
     response=await chat_agent.ainvoke(inputs)
     return response["messages"][-1].content
 
+with PostgresSaver.from_conn_string(DB_URI) as checkpointer:
+    checkpointer.setup()
 
 reports_agent=create_agent(tools=[similarity_search],model="gemini-2.5-flash",
 system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to generate reports based on information retrieved from a vector database. "
@@ -78,6 +83,9 @@ system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to gen
               "- Only include information found in the search results.")
 
 async def invoke_reports_agent(query):
+
+    current_user=get_current_user
     inputs = {"messages": [("user", query)]}
-    result=await reports_agent.ainvoke(inputs)
+    config={"configurable": {"thread_id": current_user["username"]}}
+    result=await reports_agent.ainvoke(inputs,config)
     return result
