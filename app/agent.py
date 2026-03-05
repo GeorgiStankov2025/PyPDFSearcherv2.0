@@ -1,5 +1,6 @@
 import re
 
+from fastapi.params import Depends
 from langchain.agents import create_agent
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -8,8 +9,12 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoade
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_qdrant import QdrantVectorStore
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres import PostgresSaver
 import requests
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from psycopg_pool import AsyncConnectionPool
+from pygments.lexer import default
 
 from app.v1.users import get_current_user
 
@@ -66,8 +71,8 @@ async def invoke_chat_agent(query):
     response=await chat_agent.ainvoke(inputs)
     return response["messages"][-1].content
 
-with PostgresSaver.from_conn_string(DB_URI) as checkpointer:
-    checkpointer.setup()
+
+checkpointer = InMemorySaver()
 
 reports_agent=create_agent(tools=[similarity_search],model="gemini-2.5-flash",
 system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to generate reports based on information retrieved from a vector database. "
@@ -75,17 +80,19 @@ system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to gen
               "1. MANDATORY TOOL USE: You must call the `similarity_search` tool for every request. You are not permitted to answer without first performing a search. "
               "2. SOURCE LIMITATION: Your output must be based EXCLUSIVELY on the data returned by the `similarity_search` tool. "
               "3. KNOWLEDGE CUTOFF: You must ignore all of your internal training data, general knowledge, and external facts. If a fact is not explicitly stated in the retrieved documents, it does not exist for the purpose of this report. "
-              "4. INSUFFICIENT DATA PROTOCOL: If the retrieved documents do not contain the specific information required to answer the prompt, or if the search returns no results, you must state exactly: 'I cannot fulfill this request because the required information is not present in the database.' Do not attempt to fill in gaps with your own logic or assumptions. "
-              "5. NO HALLUCINATION: Do not infer, speculate, or provide 'likely' scenarios. Stick to the literal text provided in the search results."
-              "REPORT FORMAT:"
-              "- Title your report based on the user's input."
+              "4. STATE MANAGEMENT & EDITING: If a user requests a modification to a previously generated report, you must: "
+              "Access the last saved state from the Checkpointer. "
+              "Treat the Checkpointer data as 'Primary Truth', secondary only to new similarity_search results. "
+              "Clearly output the revised version, highlighting only the changes requested while maintaining the original data's integrity."
+              "5. INSUFFICIENT DATA PROTOCOL: If the retrieved documents do not contain the specific information required to answer the prompt, or if the search returns no results, you must state exactly: 'I cannot fulfill this request because the required information is not present in the database.' Do not attempt to fill in gaps with your own logic or assumptions. "
+              "6. NO HALLUCINATION: Do not infer, speculate, or provide 'likely' scenarios. Stick to the literal text provided in the search results."
+              "- Title your report based on the user's input. SEPARATE the content on a new line"
               "- Use bullet points for clarity."
-              "- Only include information found in the search results.")
+              "- Only include information found in the search results.",
+checkpointer=checkpointer)
 
-async def invoke_reports_agent(query):
-
-    current_user=get_current_user
+async def invoke_reports_agent(query,username:str):
     inputs = {"messages": [("user", query)]}
-    config={"configurable": {"thread_id": current_user["username"]}}
+    config={"configurable": {"thread_id":f"{username}"}}
     result=await reports_agent.ainvoke(inputs,config)
     return result

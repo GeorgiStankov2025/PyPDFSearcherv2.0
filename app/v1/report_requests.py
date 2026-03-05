@@ -15,34 +15,28 @@ router=APIRouter(dependencies=[Depends(verify_token)])
 @router.post("/report_requests",tags=["report_requests"])
 async def create_report(request:CreateReport,session:AsyncSession=Depends(get_async_session),current_user:dict=Depends(get_current_user)):
 
-    user_search=await session.execute(select(User).where(User.username == current_user["username"]))
-    user=user_search.scalars().first()
 
-    result=await invoke_reports_agent(request.message)
+    #user_search=await session.execute(select(User).where(User.username == current_user["username"]))
+    #user=user_search.scalars().first()
 
-    report_request=ReportRequest(
+    username=current_user["username"]
 
-        input_message=request.message,
-        user_id=user.id,
-        created_at=datetime.now(),
-        is_successful=True
-    )
-    if "I cannot fulfill this request because the required information is not present in the database." in result['messages'][-1].content:
-        report_request.is_successful=False
+    result=await invoke_reports_agent(request.message,username)
+    document_content=result['messages'][-1].content[0].get('text', '').replace("*","")
+    if 'I cannot fulfill this request' in document_content:
+        return {"message":"I cannot fulfill this request because the required information is not present in the database. Try to be more specific or choose a different topic."}
     else:
-        document_content=result['messages'][-1].content[0].get('text', '').replace("*","")
-        document_content=document_content.replace("##","")
+        document_content = document_content.replace("##", "")
+        document_title=document_content.splitlines()[0]
         document=Document()
-        document.add_heading(request.message,level=1)
+        document.add_heading(document_title,level=1)
         document.add_heading(f"Author:{current_user['username']}",level=2)
         document.add_paragraph(document_content)
-        document.save(rf"D:\ПУ\II курс\Python\PyPDFSearcher\generated_reports\{request.message}.docx")
+        document.save(rf"D:\ПУ\II курс\Python\PyPDFSearcher\generated_reports\{document_title}.docx")
+        return await download_file(document_title+".docx")
 
-    session.add(report_request)
-    await session.commit()
-    await session.refresh(report_request)
-    return await download_file(request.message+".docx")
 
+"""
 @router.get("/report_requests",tags=["report_requests"])
 async def get_all_report_requests(session:AsyncSession=Depends(get_async_session)):
     result=await session.execute(select(ReportRequest).order_by(ReportRequest.created_at.desc()))
@@ -82,3 +76,4 @@ async def delete_report_request(id:str,session:AsyncSession=Depends(get_async_se
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+"""
