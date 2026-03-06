@@ -15,7 +15,7 @@ import requests
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from psycopg_pool import AsyncConnectionPool
 from pygments.lexer import default
-
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from app.v1.users import get_current_user
 
 open_api_key=os.getenv("OPENAI_API_KEY")
@@ -71,8 +71,7 @@ async def invoke_chat_agent(query):
     response=await chat_agent.ainvoke(inputs)
     return response["messages"][-1].content
 
-
-checkpointer = InMemorySaver()
+checkpointer=InMemorySaver()
 
 reports_agent=create_agent(tools=[similarity_search],model="gemini-2.5-flash",
 system_prompt="You are a strict Data Analysis Agent. Your sole purpose is to generate reports based on information retrieved from a vector database. "

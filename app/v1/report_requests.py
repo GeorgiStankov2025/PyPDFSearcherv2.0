@@ -26,6 +26,7 @@ async def create_report(request:CreateReport,session:AsyncSession=Depends(get_as
     if 'I cannot fulfill this request' in document_content:
         return {"message":"I cannot fulfill this request because the required information is not present in the database. Try to be more specific or choose a different topic."}
     else:
+
         document_content = document_content.replace("##", "")
         document_title=document_content.splitlines()[0]
         document=Document()
