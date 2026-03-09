@@ -2,9 +2,10 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
-
+import asyncio  # Import to init
 
 from app import emails
+from app.agent import report_agent_setup, close_pool
 from app.v1 import users, prompts, admin, report_requests, files, sessions
 from app.db import create_db_and_tables
 
@@ -12,7 +13,9 @@ from app.db import create_db_and_tables
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_db_and_tables()
+    await report_agent_setup()
     yield
+    await close_pool()
 app=FastAPI(lifespan=lifespan)
 app.include_router(prompts.router)
 app.include_router(users.router)
@@ -44,4 +47,5 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 if __name__=="__main__":
+
     uvicorn.run("main:app",host="127.0.0.1",port=5000,reload=True)
