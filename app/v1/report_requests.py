@@ -2,18 +2,23 @@ from datetime import datetime
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.params import Depends
+from fastapi import Request,Response
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.agent import invoke_reports_agent
 from app.db import get_async_session, ReportRequest, User
-from app.schemas import CreateReport
+from app.schemas import CreateReport, SessionData
+from app.session import cookie
 from app.v1.files import download_file
+
 from app.v1.users import verify_token, get_current_user
 from docx import Document
 router=APIRouter(dependencies=[Depends(verify_token)])
 
+
+
 @router.post("/report_requests",tags=["report_requests"])
-async def create_report(request:CreateReport,session:AsyncSession=Depends(get_async_session),current_user:dict=Depends(get_current_user)):
+async def create_report(request:CreateReport,response: Response,current_user:dict=Depends(get_current_user)):
 
 
     #user_search=await session.execute(select(User).where(User.username == current_user["username"]))
@@ -21,7 +26,7 @@ async def create_report(request:CreateReport,session:AsyncSession=Depends(get_as
 
     username=current_user["username"]
 
-    result=await invoke_reports_agent(request.message,username)
+    result=await invoke_reports_agent(request.message,username,response)
     document_content=result['messages'][-1].content[0].get('text', '').replace("*","")
     if 'I cannot fulfill this request' in document_content:
         return {"message":"I cannot fulfill this request because the required information is not present in the database. Try to be more specific or choose a different topic."}

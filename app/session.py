@@ -1,9 +1,11 @@
+from typing import Optional, Dict, Any
 from uuid import UUID
 
-from fastapi import HTTPException
+from fastapi import HTTPException,Request
 from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 from fastapi_sessions.session_verifier import SessionVerifier
+import json
 
 from app.schemas import SessionData
 
@@ -13,7 +15,7 @@ cookie=SessionCookie(
 
     cookie_name="report_cookie",
     identifier="general_verifier",
-    auto_error=True,
+    auto_error=False,
     secret_key='THE_BIG_SECRET',
     cookie_params=cookie_params,
 
@@ -21,43 +23,19 @@ cookie=SessionCookie(
 
 backend=InMemoryBackend[UUID,SessionData]()
 
-class BasicVerifier(SessionVerifier[UUID, SessionData]):
-    def __init__(
-        self,
-        *,
-        identifier: str,
-        auto_error: bool,
-        backend: InMemoryBackend[UUID, SessionData],
-        auth_http_exception: HTTPException,
-    ):
-        self._identifier = identifier
-        self._auto_error = auto_error
-        self._backend = backend
-        self._auth_http_exception = auth_http_exception
 
-    @property
-    def identifier(self):
-        return self._identifier
+def get_metadata(request: Request) -> Optional[Dict[str, Any]]:
+    """
+    Extract and parse metadata from cookie.
+    Returns None if cookie doesn't exist.
+    """
+    metadata_cookie = request.cookies.get("metadata")
 
-    @property
-    def backend(self):
-        return self._backend
+    if not metadata_cookie:
+        return None
 
-    @property
-    def auto_error(self):
-        return self._auto_error
-
-    @property
-    def auth_http_exception(self):
-        return self._auth_http_exception
-
-    def verify_session(self, model: SessionData) -> bool:
-        """If the session exists, it is valid"""
-        return True
-
-verifier = BasicVerifier(
-        identifier="general_verifier",
-        auto_error=True,
-        backend=backend,
-        auth_http_exception=HTTPException(status_code=403, detail="invalid session"),
-)
+    try:
+        metadata = json.loads(metadata_cookie)
+        return metadata
+    except json.JSONDecodeError:
+        return None

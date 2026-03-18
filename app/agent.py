@@ -2,9 +2,11 @@ import asyncio
 import re
 import selectors
 import uuid
+from datetime import datetime
 
 from asyncstdlib import await_each
-from fastapi.params import Depends
+from cleo.io import inputs
+from fastapi import Depends, APIRouter,Response
 from langchain.agents import create_agent
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -15,12 +17,18 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres import PostgresSaver
-import requests
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from psycopg_pool import AsyncConnectionPool
 from pygments.lexer import default
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from fastapi import Request
+
+from app.schemas import SessionData
+from app.session import cookie, get_metadata
+from app.v1.sessions import set_metadata, get_user_metadata
 from app.v1.users import get_current_user
+
+router=APIRouter()
 
 open_api_key=os.getenv("OPENAI_API_KEY")
 
@@ -114,8 +122,18 @@ async def close_pool():
 loop_factory = lambda: asyncio.SelectorEventLoop(selectors.SelectSelector())
 asyncio.run(report_agent_setup(),loop_factory=loop_factory)
 
-async def invoke_reports_agent(query,username:str):
+topic=None
+
+async def invoke_reports_agent(query,username:str,response: Response):
+    global topic
+    #cookie_data=await get_user_metadata(state_request)
     inputs = {"messages": [("user", query)]}
-    config={"configurable": {"thread_id":f"{username}"}}
+
+    if topic is not None:
+        config = {"configurable": {"thread_id": f"{topic}"}}
+    else:
+        config = {"configurable": {"thread_id": f"{username+"+"+query}"}}
+        topic=f"{username+"+"+query}"
+
     result=await reports_agent.ainvoke(inputs,config)
     return result

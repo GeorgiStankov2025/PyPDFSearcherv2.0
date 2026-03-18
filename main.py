@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 import asyncio  # Import to init
 
+from starlette.middleware.sessions import SessionMiddleware
+
 from app import emails
 from app.agent import report_agent_setup, close_pool
 from app.v1 import users, prompts, admin, report_requests, files, sessions
@@ -24,6 +26,8 @@ app.include_router(admin.router)
 app.include_router(report_requests.router)
 app.include_router(files.router)
 app.include_router(sessions.router)
+
+app.add_middleware(SessionMiddleware, secret_key='THE_BIG_SECRET')
 
 def custom_openapi():
     if app.openapi_schema:

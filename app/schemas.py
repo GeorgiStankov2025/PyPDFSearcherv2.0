@@ -45,5 +45,5 @@ class CreateReport(BaseModel):
 
 class SessionData(BaseModel):
     username:str
-    filename:str
+    topic:str
     created_at:datetime
