@@ -44,11 +44,15 @@ def verify_token(request: Request):
     authorization = request.headers.get("Authorization")
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
-
     token = authorization.split(" ")[1]
-    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    request.state.user = payload
-    return payload
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        request.state.user = payload
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.post("/register",tags=["users"])
 async def register(request:UserCreate, session:AsyncSession=Depends(db.get_async_session)):

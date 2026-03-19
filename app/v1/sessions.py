@@ -6,9 +6,7 @@ from fastapi import APIRouter, Depends, Response, HTTPException,Request
 
 from app.schemas import SessionData
 from app.session import backend, cookie, get_metadata
-
 router=APIRouter()
-
 
 @router.post("/set-metadata")
 async def set_metadata(response: Response, metadata: SessionData):

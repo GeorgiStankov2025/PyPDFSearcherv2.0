@@ -23,10 +23,12 @@ from pygments.lexer import default
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from fastapi import Request
 
+from app import thread_variables
 from app.schemas import SessionData
 from app.session import cookie, get_metadata
 from app.v1.sessions import set_metadata, get_user_metadata
 from app.v1.users import get_current_user
+import app.thread_variables
 
 router=APIRouter()
 
@@ -89,7 +91,8 @@ async def report_agent_setup():
 
     global reports_agent
     global _pool
-    _pool=AsyncConnectionPool(conninfo="postgresql://postgres:Bit_2024@localhost/pypdfsearcherdb",max_size=10)
+    _pool=AsyncConnectionPool(conninfo="postgresql://postgres:Bit_2024@localhost/pypdfsearcherdb",max_size=10,kwargs={"autocommit": True}, # Essential for the migration setup
+        open=False)
     await _pool.open()
     await _pool.wait()
     checkpointer=AsyncPostgresSaver(_pool)
@@ -122,18 +125,17 @@ async def close_pool():
 loop_factory = lambda: asyncio.SelectorEventLoop(selectors.SelectSelector())
 asyncio.run(report_agent_setup(),loop_factory=loop_factory)
 
-topic=None
+
 
 async def invoke_reports_agent(query,username:str,response: Response):
-    global topic
     #cookie_data=await get_user_metadata(state_request)
     inputs = {"messages": [("user", query)]}
 
-    if topic is not None:
-        config = {"configurable": {"thread_id": f"{topic}"}}
+    if thread_variables.topic != "" and username in thread_variables.topic:
+        config = {"configurable": {"thread_id": f"{thread_variables.topic}"}}
     else:
         config = {"configurable": {"thread_id": f"{username+"+"+query}"}}
-        topic=f"{username+"+"+query}"
+        thread_variables.topic =f"{username+"+"+query}"
 
     result=await reports_agent.ainvoke(inputs,config)
     return result
