@@ -49,6 +49,7 @@ class ReportRequest(Base):
     id=Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id=Column(UUID(as_uuid=True),ForeignKey("conversations.id") , default=uuid.uuid4)
     input_message=Column(Text, nullable=False)
+    response=Column(Text, nullable=False)
     created_at=Column(DateTime,nullable=False,default=datetime.now)
     is_successful=Column(Boolean,nullable=False,default=False)
     conversation=relationship("Conversation",back_populates="report_requests")

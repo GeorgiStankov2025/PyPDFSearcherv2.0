@@ -127,15 +127,15 @@ asyncio.run(report_agent_setup(),loop_factory=loop_factory)
 
 
 
-async def invoke_reports_agent(query,username:str,response: Response):
+async def invoke_reports_agent(query,username:str,conversation_id:str,response: Response):
     #cookie_data=await get_user_metadata(state_request)
     inputs = {"messages": [("user", query)]}
 
-    if thread_variables.topic != "" and username in thread_variables.topic:
+    if thread_variables.topic != "" and username in thread_variables.topic and conversation_id in thread_variables.topic:
         config = {"configurable": {"thread_id": f"{thread_variables.topic}"}}
     else:
-        config = {"configurable": {"thread_id": f"{username+"+"+query}"}}
-        thread_variables.topic =f"{username+"+"+query}"
+        config = {"configurable": {"thread_id": f"{username+"+"+query+"+"+conversation_id}"}}
+        thread_variables.topic =f"{username+"+"+query+"+"+conversation_id}"
 
     result=await reports_agent.ainvoke(inputs,config)
     return result
