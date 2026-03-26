@@ -134,8 +134,8 @@ async def invoke_reports_agent(query,username:str,conversation_id:str,response: 
     if thread_variables.topic != "" and username in thread_variables.topic and conversation_id in thread_variables.topic:
         config = {"configurable": {"thread_id": f"{thread_variables.topic}"}}
     else:
-        config = {"configurable": {"thread_id": f"{username+"+"+query+"+"+conversation_id}"}}
-        thread_variables.topic =f"{username+"+"+query+"+"+conversation_id}"
+        config = {"configurable": {"thread_id": f"{username+"+"+conversation_id}"}}
+        thread_variables.topic =f"{username+"+"+conversation_id}"
 
     result=await reports_agent.ainvoke(inputs,config)
     return result
