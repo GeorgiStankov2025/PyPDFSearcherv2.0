@@ -21,7 +21,7 @@ async def get_users(session: AsyncSession = Depends(db.get_async_session),curren
         if admin.user_role != UserRole.ADMIN:
             raise HTTPException(status_code=403,detail="You are not authorized to view this page")
 
-        result = await session.execute(select(User).order_by(User.created_at.desc()).options(selectinload(User.prompts)).options(selectinload(User.report_requests)))
+        result = await session.execute(select(User).order_by(User.created_at.desc()).options(selectinload(User.prompts)).options(selectinload(User.conversations)))
         users = [row[0] for row in result.all()]
         return users
     except HTTPException as e:

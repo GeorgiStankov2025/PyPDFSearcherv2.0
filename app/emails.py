@@ -1,12 +1,9 @@
 from fastapi import HTTPException
-
 from fastapi import APIRouter
 from fastapi_mail import FastMail,MessageSchema,ConnectionConfig
-from starlette.responses import JSONResponse
 import requests
 from app.schemas import EmailSchema
 
-router = APIRouter()
 
 conf = ConnectionConfig(
     MAIL_USERNAME="bitproductions2024@gmail.com",
@@ -20,7 +17,6 @@ conf = ConnectionConfig(
     VALIDATE_CERTS=True
 )
 
-@router.post("/emails", tags=["emails"])
 async def send_mail(email: EmailSchema,verification_code:int):
     template = f"""
         <html>
@@ -45,7 +41,6 @@ async def send_mail(email: EmailSchema,verification_code:int):
     fm = FastMail(conf)
     await fm.send_message(message)
 
-@router.post("/forgotten_password_emails", tags=["emails"])
 async def send_forgotten_mail(email: EmailSchema,verification_code:int):
     template = f"""
         <html>
@@ -69,8 +64,6 @@ async def send_forgotten_mail(email: EmailSchema,verification_code:int):
 
     fm = FastMail(conf)
     await fm.send_message(message)
-
-@router.get("/verifyemail", tags=["emails"])
 async def verify_email(email: str):
     response=requests.get(f"https://api.hunter.io/v2/email-verifier?email={email}&api_key=dd2de88db7a29b0eb4e8fc2a6ec002d76093f0e1").json()
     if "data" not in response:

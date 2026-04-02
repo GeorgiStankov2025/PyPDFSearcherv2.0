@@ -1,7 +1,6 @@
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from fastapi import Depends
 from sqlalchemy import Text, String, Column, DateTime, ForeignKey, INT, Boolean,Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker

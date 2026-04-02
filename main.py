@@ -2,13 +2,10 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
-import asyncio  # Import to init
-
 from starlette.middleware.sessions import SessionMiddleware
-
-from app import emails
+from app import emails, report_requests, files
 from app.agent import report_agent_setup, close_pool
-from app.v1 import users, prompts, admin, report_requests, files, sessions, conversations
+from app.v1 import users, admin, conversations
 from app.db import create_db_and_tables
 
 
@@ -19,13 +16,8 @@ async def lifespan(app: FastAPI):
     yield
     await close_pool()
 app=FastAPI(lifespan=lifespan)
-app.include_router(prompts.router)
 app.include_router(users.router)
-app.include_router(emails.router)
 app.include_router(admin.router)
-app.include_router(report_requests.router)
-app.include_router(files.router)
-app.include_router(sessions.router)
 app.include_router(conversations.router)
 
 app.add_middleware(SessionMiddleware, secret_key='THE_BIG_SECRET')

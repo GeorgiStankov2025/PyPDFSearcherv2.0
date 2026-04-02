@@ -1,19 +1,13 @@
 import random
 import time
 from datetime import datetime, timezone, timedelta
-from email.message import EmailMessage
-
 from fastapi.security import HTTPBearer
 from jose import jwt
-from fastapi import Header
-from typing import Annotated
-
 from fastapi import HTTPException
 from fastapi import Depends
 from fastapi import APIRouter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.orm import selectinload
 
 from app import db
@@ -21,7 +15,6 @@ from app.db import User
 from app.emails import send_mail, verify_email, send_forgotten_mail
 from app.hasher import Hasher
 from app.schemas import UserCreate, UserLogin, EmailSchema, UserVerify, UserChangePassword, UserForgottenPassword
-from pydantic import ValidationError, EmailStr
 from fastapi import Request
 router = APIRouter()
 hasher = Hasher()
@@ -149,7 +142,7 @@ async def verify_user(request:UserVerify,session:AsyncSession=Depends(db.get_asy
         raise HTTPException(status_code=500,detail=str(e))
 
 @router.patch("/changepassword",dependencies=[Depends(verify_token)],tags=["users"])
-async def change_password(request:UserChangePassword,session:AsyncSession=Depends(db.get_async_session)):
+async def change_password(request:UserChangePassword,session:AsyncSession=Depends(db.get_async_session),current_user:dict=Depends(get_current_user)):
     try:
         if request.old_password =="" or request.old_password.isspace():
             raise HTTPException(status_code=400,detail="Old password field is required")
@@ -165,6 +158,9 @@ async def change_password(request:UserChangePassword,session:AsyncSession=Depend
         user = username_search.scalars().first()
         if user is None:
             raise HTTPException(status_code=400,detail="Incorrect username or old password")
+        if user.username!=current_user["username"]:
+            raise HTTPException(status_code=403,detail="You are not authorized to perform this action.")
+
         if not hasher.verify_password(plain_password=request.old_password, hashed_password=user.password_hash):
             raise HTTPException(status_code=400,detail="Incorrect username or old password")
         user.password_hash = hasher.hash_password(request.confirm_new_password)
@@ -243,19 +239,3 @@ async def forgotten_password_change(request:UserForgottenPassword,session:AsyncS
         raise HTTPException(status_code=e.status_code,detail=str(e))
    except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
-
-@router.get("/user/prompts",dependencies=[Depends(verify_token)],tags=["users"])
-async def get_prompts_for_user(session:AsyncSession=Depends(db.get_async_session),current_user:dict=Depends(get_current_user)):
-    username_search = await session.execute(select(User).where(User.username==current_user["username"]).options(selectinload(User.prompts)))
-    user = username_search.scalars().first()
-    if user is None:
-        raise HTTPException(status_code=404,detail="No user found with this username")
-    return user.prompts
-
-@router.get("/user/report-requests",dependencies=[Depends(verify_token)],tags=["users"])
-async def get_prompts_for_user(session:AsyncSession=Depends(db.get_async_session),current_user:dict=Depends(get_current_user)):
-    username_search = await session.execute(select(User).where(User.username==current_user["username"]).options(selectinload(User.report_requests)))
-    user = username_search.scalars().first()
-    if user is None:
-        raise HTTPException(status_code=404,detail="No user found with this username")
-    return user.report_requests

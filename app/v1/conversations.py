@@ -10,8 +10,8 @@ from sqlalchemy.orm import selectinload
 from app import thread_variables
 from app.db import Conversation, get_async_session, User, ReportRequest
 from app.schemas import CreateReport
-from app.v1.files import download_file
-from app.v1.report_requests import create_report
+from app.files import download_file
+from app.report_requests import create_report
 from app.v1.users import verify_token, get_current_user
 
 router=APIRouter(dependencies=[Depends(verify_token)])

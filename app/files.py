@@ -1,17 +1,10 @@
-# file_download.py
-# Basic file download endpoint using FileResponse
-from fastapi import FastAPI, HTTPException, APIRouter, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
-
-from app.v1.users import verify_token
-
-router=APIRouter()
 
 # Base directory for downloadable files
 DOWNLOADS_DIR = Path("D:/ПУ/II курс/Python/PyPDFSearcher/generated_reports")
 
-@router.get("/download/{filename}",tags=["files"])
 async def download_file(filename: str):
     """
     Download a file by name from the downloads directory.
