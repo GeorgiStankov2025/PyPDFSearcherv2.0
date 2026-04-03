@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app import emails, report_requests, files
 from app.agent import report_agent_setup, close_pool
@@ -21,6 +22,18 @@ app.include_router(admin.router)
 app.include_router(conversations.router)
 
 app.add_middleware(SessionMiddleware, secret_key='THE_BIG_SECRET')
+
+origins = [
+    "http://localhost:8501",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def custom_openapi():
     if app.openapi_schema:
