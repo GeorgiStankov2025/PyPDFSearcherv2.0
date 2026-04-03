@@ -31,8 +31,8 @@ class User(Base):
     verification_code = Column(INT,nullable=False)
     user_role = Column(user_role_enum, nullable=False, server_default="USER")
     is_verified=Column(Boolean,nullable=False,default=False)
-    prompts=relationship("Prompt",back_populates="user")
-    conversations=relationship("Conversation",back_populates="user")
+    prompts=relationship("Prompt",back_populates="user",cascade="all, delete-orphan")
+    conversations=relationship("Conversation",back_populates="user",cascade="all, delete-orphan")
 
 class Prompt(Base):
     __tablename__ = "prompts"
