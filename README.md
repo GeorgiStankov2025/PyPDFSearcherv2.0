@@ -27,7 +27,7 @@ This is an API service designed to streamline document management and analysis w
 | **Database** | PostgreSQL with SQLAlchemy 2.0.46 |
 | **Migrations** | Alembic 1.18.4 |
 | **AI Integration** | Google Generative AI, LangChain |
-| **Authentication** | JWT (python-jose), bcrypt |
+| **Authentication** | JWT (python-jose), Argon2 |
 | **Email Service** | FastAPI-Mail, aiosmtplib |
 | **Async Support** | asyncpg, anyio |
 | **Validation** | Pydantic 2.12.5 |
